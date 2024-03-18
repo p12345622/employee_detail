@@ -2,9 +2,7 @@ class EmployeesController < ApplicationController
 	 before_action :set_employee, only: [:show, :update, :destroy]
 
   def create
-    byebug
     @employee = Employee.new(employee_params)
-
     if @employee.save
       render json: @employee, status: :created
     else
@@ -13,14 +11,15 @@ class EmployeesController < ApplicationController
   end
 
   def tax_deduction
-    @employee = Employee.find(params[:id])
-    tax_amount = calculate_tax(@employee.salary)
-    cess_amount = calculate_cess(@employee.salary)
+	@employee = Employee.find(params[:id])
+    yearly_salary = calculate_yearly_salary(@employee.salary)
+    tax_amount = calculate_tax(yearly_salary)
+    cess_amount = calculate_cess(yearly_salary)
     render json: { 
-      employee_code: @employee.id,
+      employee_code: @employee.employee_id,
       first_name: @employee.first_name,
       last_name: @employee.last_name,
-      yearly_salary: @employee.salary * 12,
+      yearly_salary: yearly_salary,
       tax_amount: tax_amount,
       cess_amount: cess_amount
     }
@@ -34,6 +33,14 @@ class EmployeesController < ApplicationController
 
   def set_employee
     @employee = Employee.find(params[:id])
+  end
+
+  def calculate_yearly_salary(monthly_salary)
+    lop_per_day = monthly_salary / 30  
+    days_worked = (Date.today - @employee.doj).to_i
+    days_on_lop = [0, days_worked - 365].max
+    yearly_salary = (monthly_salary - (days_on_lop * lop_per_day)) * 12
+    yearly_salary
   end
 
   def calculate_tax(salary)
